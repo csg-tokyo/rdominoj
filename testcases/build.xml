@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<project name="testcases" default="all">
+
+    <property name="RDominoJ" value=".."/>
+    <property name="DominoJ"  value=".."/>
+    <property name="dominoj"  value=".."/>
+
+    <target name="all" depends="common,increase,objs,outer,parameter,readbysub,select,two,writebysub"/>
+
+    <target name="common">
+        <java classpath="${RDominoJ}" classname="JavaCompiler" fork="true">
+            <arg line="common/IntCell.java"/>
+        </java>
+    </target>
+
+    <target name="increase">
+        <java classpath="${RDominoJ}" classname="JavaCompiler" fork="true">
+            <arg line="increase/Test.java"/>
+        </java>
+    </target>
+
+    <target name="objs">
+        <java classpath="${RDominoJ}" classname="JavaCompiler" fork="true">
+            <arg line="objs/Test.java"/>
+        </java>
+    </target>
+
+    <target name="outer">
+        <java classpath="${RDominoJ}" classname="JavaCompiler" fork="true">
+            <arg line="outer/IntCell.java"/>
+        </java>
+        <java classpath="${RDominoJ}" classname="JavaCompiler" fork="true">
+            <arg line="outer/Outer.java"/>
+        </java>
+    </target>
+
+    <target name="parameter">
+        <java classpath="${RDominoJ}" classname="JavaCompiler" fork="true">
+            <arg line="parameter/Outer.java"/>
+        </java>
+    </target>
+
+    <target name="readbysub">
+        <java classpath="${RDominoJ}" classname="JavaCompiler" fork="true">
+            <arg line="readbysub/Base.java readbysub/Sub.java"/>
+        </java>
+    </target>
+
+    <target name="select">
+        <java classpath="${RDominoJ}" classname="JavaCompiler" fork="true">
+            <arg line="select/IntCell.java"/>
+        </java>
+    </target>
+
+    <target name="two">
+        <java classpath="${RDominoJ}" classname="JavaCompiler" fork="true">
+            <arg line="two/Shape.java"/>
+        </java>
+    </target>
+
+    <target name="writebysub">
+        <java classpath="${RDominoJ}" classname="JavaCompiler" fork="true">
+            <arg line="writebysub/Base.java writebysub/Sub.java"/>
+        </java>
+    </target>
+
+    <target name="run">
+        <echo message="-------- common --------"/>
+        <java classpath="${dominoj}:." classname="common.IntCell" fork="true"/>
+        <echo message="-------- increase --------"/>
+        <java classpath="${dominoj}:." classname="increase.Test" fork="true"/>
+        <echo message="-------- objs --------"/>
+        <java classpath="${dominoj}:." classname="objs.Test" fork="true"/>
+        <echo message="-------- outer --------"/>
+        <java classpath="${dominoj}:." classname="outer.Outer" fork="true"/>
+        <echo message="-------- parameter --------"/>
+        <java classpath="${dominoj}:." classname="parameter.Outer" fork="true"/>
+        <echo message="-------- readbysub --------"/>
+        <java classpath="${dominoj}:." classname="readbysub.Sub" fork="true"/>
+        <echo message="-------- select --------"/>
+        <java classpath="${dominoj}:." classname="select.IntCell" fork="true"/>
+        <echo message="-------- two --------"/>
+        <java classpath="${dominoj}:." classname="two.Shape" fork="true"/>
+        <echo message="-------- writebysub --------"/>
+        <java classpath="${dominoj}:." classname="writebysub.Sub" fork="true"/>
+    </target>
+
+
+    <target name="clean">
+        <delete>
+            <fileset dir="." includes="**/*.class"/>
+        </delete>
+    </target>
+
+</project>

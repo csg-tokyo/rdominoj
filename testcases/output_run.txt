@@ -1,0 +1,69 @@
+Buildfile: rdominoj/testcases/build.xml
+
+run:
+     [echo] -------- common --------
+     [java] c: setValue 1
+     [java] {c.print} += c.print();
+     [java] c: setValue 2
+     [java] c: print 2
+     [java] c: setValue 3
+     [java] c: print 3
+     [java] {c.print} -= c.print();
+     [java] c: setValue 4
+     [java] {c.print} ^= c.print();
+     [java] c: print 4
+     [java] c: setValue 5
+     [java] {c.print} += c.print();
+     [java] c: print 5
+     [java] c: setValue 6
+     [java] c: print 6
+     [java] {c.print} -= c.print();
+     [java] c: setValue 7
+     [java] {c.print} = c.print();
+     [java] c: setValue 8
+     [echo] -------- increase --------
+     [java] 1
+     [echo] -------- objs --------
+     [java] {c1.print} += c1.print();
+     [java] c1: setValue 1
+     [java] c1: print 1
+     [java] c2: setValue 2
+     [java] {c1.print} += c2.print();
+     [java] c1: setValue 3
+     [java] c1: print 3
+     [java] c2: print 2
+     [java] c2: setValue 4
+     [java] {c1.print} -= c2.print();
+     [java] c1: setValue 5
+     [java] c1: print 5
+     [java] c2: setValue 6
+     [echo] -------- outer --------
+     [java] {o.print1} += o.print1();
+     [java] {o.print2} += o.print2();
+     [java] o: print2 3
+     [echo] -------- parameter --------
+     [java] c: setValue 1
+     [java] {o.print} += o.print();
+     [java] c: setValue 2
+     [echo] -------- readbysub --------
+     [java] 1
+     [echo] -------- select --------
+     [java] setValue beginning 0
+     [java] setValue end 1
+     [java] {c.print} ^= c.print();
+     [java] print 1
+     [java] setValue beginning 1
+     [java] setValue end 2
+     [java] {c.print} += c.print();
+     [java] print 2
+     [java] setValue beginning 2
+     [java] setValue end 3
+     [java] print 3
+     [echo] -------- two --------
+     [java] print 1
+     [java] print 3
+     [echo] -------- writebysub --------
+     [java] 1
+
+BUILD SUCCESSFUL
+Total time: 1 second

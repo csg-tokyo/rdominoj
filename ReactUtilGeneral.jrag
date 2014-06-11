@@ -1,0 +1,123 @@
+/*
+ * Utilities for general purpose.
+ */
+
+aspect ReactUtilGeneral {
+
+    /*
+     * identify the braces operator.
+     */
+    protected boolean AssignExpr.braces = false;
+    public boolean AssignExpr.hasBraces() {
+        return braces;
+    }
+    public AssignSimpleExpr.AssignSimpleExpr(Expr p0, Expr p1, boolean braces) {
+        this(p0, p1);
+        this.braces = braces;
+    }
+    public AssignXorExpr.AssignXorExpr(Expr p0, Expr p1, boolean braces) {
+        this(p0, p1);
+        this.braces = braces;
+    }
+    public AssignPlusExpr.AssignPlusExpr(Expr p0, Expr p1, boolean braces) {
+        this(p0, p1);
+        this.braces = braces;
+    }
+    public AssignMinusExpr.AssignMinusExpr(Expr p0, Expr p1, boolean braces) {
+        this(p0, p1);
+        this.braces = braces;
+    }
+
+    /*
+     * collect all method accesses in its descendants.
+     * if the node itself is a method access, return the tree from the first dot to the node.
+     * else return all the trees collected by its children.
+     * the first item is the tree, and the second item is the method access itself.
+     */
+    public ArrayList<Pair<Dot, MethodAccess>> ASTNode.collectMethodAccess() {
+        ArrayList<Pair<Dot, MethodAccess>> mas = new ArrayList<Pair<Dot, MethodAccess>>();
+        if(this instanceof MethodAccess) {
+            if(!(getParent() instanceof Dot)) {    // e.g. y()
+                mas.add(new Pair(null, this));
+            } else {    // e.g. x.y(), x.y().z()
+                ASTNode root = getParent();
+                while(root.getParent() instanceof Dot && ((Dot)root.getParent()).getRight() == root) {
+                    root = root.getParent();
+                }
+                mas.add(new Pair(root, this));
+            }
+        }
+        for(int i=0; i<getNumChild(); i++) {
+            mas.addAll(getChild(i).collectMethodAccess());
+        }
+        return mas;
+    }
+
+    public boolean MethodDecl.isConstructor = false;
+    refine ModifyConstructor public MethodDecl ConstructorDecl.generateMethodDecl() {
+        MethodDecl md = refined();
+        md.isConstructor = true;
+        return md;
+    }
+
+    /* MethodDecl holds all fields read by its body */
+    public HashSet<FieldDeclaration> MethodDecl.readFields = null;
+    public void MethodDecl.addReadField(FieldDeclaration field) {
+        if(readFields == null) {
+            readFields = new HashSet<FieldDeclaration>();
+        }
+        if(readFields.add(field)) {
+            //System.out.println("method " + name() + " reads " + field.name());
+        }
+    }
+
+    /* FieldDeclaration holds all methods writing it */
+    public HashSet<MethodDecl> FieldDeclaration.writeMethods = null;
+    public void FieldDeclaration.addWriteMethod(MethodDecl writer) {
+        if(writer.generated && writer.isConstructor)    return;
+        if(writeMethods == null) {
+            writeMethods = new HashSet<MethodDecl>();
+        }
+        if(writeMethods.add(writer)) {
+            //System.out.println("method " + writer.name() + " writes " + name());
+        }
+    }
+
+    refine UtilGeneral public void TypeDecl.importPkgs() {
+        CompilationUnit cu = hostType().compilationUnit();
+        if(cu.importedTypes("HashSet").size() <= 0 && cu.importedTypesOnDemand("HashSet").size() <= 0) {
+            Access arraylist = hostType().lookupType("java.util", "HashSet").createQualifiedAccess();
+            cu.addImportDecl(new SingleTypeImportDecl(arraylist));
+            cu.flushCache();
+        }
+        refined();
+    }
+
+    /* workaround for
+     * java.lang.ClassCastException: AST.Opt cannot be cast to AST.List
+     *   at AST.AnonymousDecl.getImplementsListNoTransform(AnonymousDecl.java:529)
+     *   at AST.ClassDecl.Define_TypeDecl_hostType(ClassDecl.java:2211)
+     *   at AST.ASTNode.Define_TypeDecl_hostType(ASTNode.java:1808)
+     *   at AST.BodyDecl.hostType(BodyDecl.java:483)
+     *   at AST.ConstructorDecl.accessibleFrom_compute(ConstructorDecl.java:1310)
+     *   at AST.ConstructorDecl.accessibleFrom(ConstructorDecl.java:1302)
+     *   at AST.Expr.chooseConstructor(Expr.java:200)
+     *   at AST.ClassInstanceExpr.decls_compute(ClassInstanceExpr.java:948)
+     *   at AST.ClassInstanceExpr.decls(ClassInstanceExpr.java:939)
+     *   at AST.ClassInstanceExpr.refined_NameCheck_ClassInstanceExpr_nameCheck(ClassInstanceExpr.java:170)
+     *   at AST.ClassInstanceExpr.nameCheck(ClassInstanceExpr.java:762)
+     *     :
+     */
+    refine AccessControl eq ConstructorDecl.accessibleFrom(TypeDecl type) {
+        if(getParent() != null && getParent().getParent() != null) {
+            if(getParent() instanceof List && getParent().getParent() instanceof AnonymousDecl) {
+                AnonymousDecl anonymous = (AnonymousDecl)getParent().getParent();
+                if(anonymous.getChildNoTransform(3) instanceof Opt) {
+                    List<Access> dummy = anonymous.getImplementsList();
+                }
+            }
+        }
+        return refined(type);
+    }
+
+}

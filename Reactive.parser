@@ -1,0 +1,6 @@
+Expr assignment =
+    LBRACE postfix_expression.dest RBRACE EQ assignment_expression.source {: return new AssignSimpleExpr(dest, source, true); :}
+  | LBRACE postfix_expression.dest RBRACE PLUSEQ assignment_expression.source {: return new AssignPlusExpr(dest, source, true); :}
+  | LBRACE postfix_expression.dest RBRACE MINUSEQ assignment_expression.source {: return new AssignMinusExpr(dest, source, true); :}
+  | LBRACE postfix_expression.dest RBRACE XOREQ assignment_expression.source {: return new AssignXorExpr(dest, source, true); :}
+  ;

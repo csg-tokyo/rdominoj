@@ -1,0 +1,94 @@
+Buildfile: rdominoj/examples/build.xml
+
+run:
+     [echo] -------- meter_dominoj --------
+     [java] the distance between s1 and s2:s3 is 3.0.
+     [java] the distance between s1 and s2:s3 is 5.0.
+     [java] the distance between x1 and s2:s3 is 5.0.
+     [java] the distance between x1 and s2:s3 is 6.4031242374328485.
+     [java] the distance between x1 and s2:s3 is 13.0.
+     [java] the distance between x1 and s2:s3 is 14.422205101855956.
+     [java] the distance between x1 and s2:s3 is 17.0.
+     [java] the distance between x1 and s2:x3 is 17.0.
+     [java] the distance between x1 and s2:x3 is 16.55294535724685.
+     [java] the distance between x1 and s2:x3 is 25.0.
+     [java] the distance between x1 and x2:x3 is 25.0.
+     [java] the distance between x1 and x2:x3 is 25.632011235952593.
+     [java] the distance between x1 and x2:x3 is 41.0.
+     [echo] -------- meter_rdominoj --------
+     [java] the distance between s1 and s2:s3 is 3.0.
+     [java] the distance between s1 and s2:s3 is 5.0.
+     [java] the distance between x1 and s2:s3 is 5.0.
+     [java] the distance between x1 and s2:s3 is 6.4031242374328485.
+     [java] the distance between x1 and s2:s3 is 13.0.
+     [java] the distance between x1 and s2:s3 is 14.422205101855956.
+     [java] the distance between x1 and s2:s3 is 17.0.
+     [java] the distance between x1 and s2:x3 is 17.0.
+     [java] the distance between x1 and s2:x3 is 16.55294535724685.
+     [java] the distance between x1 and s2:x3 is 25.0.
+     [java] the distance between x1 and x2:x3 is 25.0.
+     [java] the distance between x1 and x2:x3 is 25.632011235952593.
+     [java] the distance between x1 and x2:x3 is 41.0.
+     [echo] -------- redundant_dominoj --------
+     [java] parent: 1, 0
+     [java] parent:child: 1, 0
+     [java] parent:child: 1, 0
+     [echo] -------- redundant_rdominoj --------
+     [java] parent: 1, 0
+     [java] parent:child: 1, 0
+     [echo] -------- timer_rdominoj --------
+     [java] 1402490369516
+     [java] 1402490369616
+     [java] 1402490369716
+     [java] 1402490369817
+     [java] 1402490369918
+     [java] 1402490370019
+     [java] 1402490370120
+     [java] 1402490370220
+     [java] 1402490370321
+     [java] 1402490370422
+     [java] 1402490370523
+     [java] 1402490370625
+     [java] 1402490370726
+     [java] 1402490370827
+     [java] 1402490370928
+     [java] 1402490371028
+     [java] 1402490371129
+     [java] 1402490371230
+     [java] 1402490371330
+     [java] 1402490371431
+     [java] 1402490371532
+     [java] 1402490371633
+     [java] 1402490371734
+     [java] 1402490371835
+     [java] 1402490371935
+     [java] 1402490372036
+     [java] 1402490372137
+     [java] 1402490372238
+     [java] 1402490372339
+     [java] 1402490372441
+     [java] 1402490372541
+     [java] 1402490372642
+     [java] 1402490372743
+     [java] 1402490372843
+     [java] 1402490372944
+     [java] 1402490373046
+     [java] 1402490373147
+     [java] 1402490373248
+     [java] 1402490373349
+     [java] 1402490373451
+     [java] 1402490373552
+     [java] 1402490373655
+     [java] 1402490373756
+     [java] 1402490373857
+     [java] 1402490373958
+     [java] 1402490374059
+     [java] 1402490374160
+     [java] 1402490374260
+     [java] 1402490374362
+     [java] 1402490374463
+     [echo] -------- sheet_dominoj --------
+     [echo] -------- sheet_rdominoj --------
+
+BUILD SUCCESSFUL
+Total time: 25 seconds

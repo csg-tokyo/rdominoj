@@ -1,0 +1,176 @@
+/*
+ * Generate helper methods for method slots when collectErrors.
+ */
+
+aspect ReactModifyMethod {
+
+    refine ModifyMethod public void MethodDecl.modifyParms() {
+        TypeDecl td = hostType();
+        TypeDecl ctype = td.lookupType("dominoj", "Closure");
+        if(!name().endsWith("$impl")
+           && !td.instanceOf(ctype)
+           && !td.isEnumDecl()
+           && !(name().equals("main") && isStatic())
+           && isMethodSlot()
+           && !generated
+           && !(!td.compilationUnit().fromSource() && isParameterModified())
+           && !isDummy()) {
+            generateBracesMethods();
+        }
+        refined();
+    }
+
+    private Block MethodDecl.depBlock = new Block();
+    public void MethodDecl.generateBracesMethods() {
+        //System.out.println("create braces methods for " + name() + "...");
+
+        // TODO: only create for used method
+
+        TypeDecl td = hostType();
+
+        // HashSet set = new HashSet();
+        Block block = new Block();
+        TypeDecl stype = td.lookupType("java.util", "HashSet");
+        String svar = "set";
+        ClassInstanceExpr sinit = new ClassInstanceExpr(stype.createQualifiedAccess(), new List());
+        VariableDeclaration s = new VariableDeclaration(stype.createQualifiedAccess(), svar, sinit);
+        block.addStmt(s);
+
+        // Iterator iter = ${sid}$getSlot().iterator();
+        String iter = "iter";
+        String sid = methodId(false, true);
+        block.addStmt(MethodDecl.generateIteratorStmt(iter, sid+"$getSlot", td));
+
+        // while(iter.hasNext()) {
+        //   Closure c = (Closure) iter.next();
+        //   set.addAll(c.writers());
+        // }
+        Block wb = new Block();
+        String cvar = "c";
+        wb.addStmt(MethodDecl.generateVarDeclAssignMethodStmt(cvar, "dominoj", "Closure", iter, "next", new String[]{}, true, td));
+        MethodAccess addAll = new MethodAccess("addAll", new List());
+        addAll.addArg(new Dot(new VarAccess(cvar), new MethodAccess("writers", new List())));
+        wb.addStmt(new ExprStmt(new Dot(new VarAccess(svar), addAll)));
+        WhileStmt ws = new WhileStmt(new Dot(new VarAccess(iter), new MethodAccess("hasNext", new List())), wb);
+        block.addStmt(ws);
+
+        // return set;
+        block.addStmt(new ReturnStmt(new VarAccess(svar)));
+
+        ClassDecl cd = td instanceof ClassDecl ? (ClassDecl)td : null;
+        if(cd != null)    cd.createMemberMethod(methodId()+"$braces", stype.createQualifiedAccess(), new List<ParameterDeclaration>(), block, isStatic());
+
+
+        // for-MethodDecl.generateClosureMember
+        // collect all methods it depends by collecting all writer methods of the fields it reads.
+        HashSet<MethodDecl> mds = new HashSet<MethodDecl>();
+        if(readFields != null) {
+            Iterator<FieldDeclaration> fiter = readFields.iterator();
+            while(fiter.hasNext()) {
+                FieldDeclaration fd = fiter.next();
+                if(fd.writeMethods != null)    mds.addAll(fd.writeMethods);
+            }
+            Iterator<MethodDecl> miter = mds.iterator();
+            while(miter.hasNext()) {
+                MethodDecl md = miter.next();
+                if(md.name().endsWith("$impl"))    continue;
+                //System.out.println(name() + " is affected by " + md.name());
+                if(!md.isMethodSlot() && !md.isDummy())    continue;
+                MethodAccess add = new MethodAccess("add", new List());
+                add.addArg(new MethodAccess(md.methodId(false,true)+"$getSlot", new List()));
+                depBlock.addStmt(new ExprStmt(new Dot(new VarAccess(svar), add)));
+            }
+        }
+
+        // find out all method accesses in the block
+        ArrayList<Pair<Dot, MethodAccess>> mas = new ArrayList<Pair<Dot, MethodAccess>>();
+        if(hasBlock()) {
+            Block body = getBlock();
+            for(int i=0; i<body.getNumStmt(); i++) {
+                mas.addAll(body.getStmt(i).collectMethodAccess());
+            }
+        }
+        //System.out.println("the number of MethodAccess in " + name() + " is " + mas.size());
+
+        // current method also depends on the fields read by the methods it calls
+        for(int i=0; i<mas.size(); i++) {
+            String arg = "arg";
+            Dot node = mas.get(i).getFirst();
+            boolean isDot = node != null;
+            MethodAccess ma = mas.get(i).getSecond();
+            boolean isLeft = isDot && node.lastDot().getLeft()==ma;
+            MethodDecl md = ma.decl();
+            if(!md.isMethodSlot() && !md.isDummy() || ma.name().equals("proceed"))    continue;
+            if(isDot) {
+                Expr left = node.getLeft();
+                while(left instanceof CastExpr || left instanceof ParExpr) {
+                    if(left instanceof CastExpr)    left = ((CastExpr)left).getExpr();
+                    if(left instanceof ParExpr)    left = ((ParExpr)left).getExpr();
+                }
+                if(left instanceof VarAccess) {
+                    Variable v = ((VarAccess)left).decl();
+                    // 1. unless it is a field access
+                    // 2. avoid creating braces methods for $predecessor.z() since $predecessor cannot be got
+                    if(!(v instanceof FieldDeclaration) || v.type().isUnknown())    continue;
+                }
+            }
+            if(md.hostType().compilationUnit().fromSource() && !md.done())    md.modifyParms();
+            String impl = md.methodId(false, true) + "$impl";
+            String braces = md.methodId() + "$braces";
+            // => xxx.${braces}();
+            MethodAccess replace = new MethodAccess(braces, new List());
+            Expr expr = replace;
+            Expr cond = null;
+            if(isDot) {
+                expr = node.fullCopy();
+                if(isLeft) {
+                    if(((Dot)expr).lastDot() == expr) {    // e.g. y().z()
+                        expr = replace;
+                        if(node.lastDot() != node) {
+                            Dot dot = node.fullCopy();
+                            Dot parent = (Dot) dot.lastDot().getParent();
+                            if(parent == dot) {    // e.g. a.y().z()
+                                cond = parent;
+                            } else {    // e.g. a.b.y().z()
+                                Dot grand = (Dot) parent.getParent();
+                                grand.setRight((Access)parent.getLeft());
+                                cond = dot;
+                            }
+                        }
+                    } else {    // e.g. x.y().z()
+                        Dot grand = (Dot)((Dot)expr).lastDot().getParent();
+                        grand.setRight(replace);
+                    }
+                } else {   // e.g. x.y()
+                    ((Dot)expr).replaceLast(replace);
+                    Dot dot = node.fullCopy();
+                    if(dot.lastDot() == dot) {
+                        cond = dot.getLeft();
+                    } else {
+                        Dot parent = (Dot) dot.lastDot().getParent();
+                        parent.setRight((Access)dot.lastDot().getLeft());
+                        cond = dot;
+                    }
+                }
+                if(((Dot)expr).getLeft() instanceof ThisAccess
+                   || ((Dot)expr).getLeft() instanceof SuperAccess) {
+                    expr = new Dot(hostType().createQualifiedAccess(), (Dot)expr);
+                }
+            }
+            addAll = new MethodAccess("addAll", new List());
+            addAll.addArg(expr);
+            ExprStmt es = new ExprStmt(new Dot(new VarAccess(svar), addAll));
+            if(cond == null) {
+                depBlock.addStmt(es);
+            } else {
+                IfStmt is = new IfStmt();
+                is.setCondition(new NEExpr(cond, new NullLiteral("null")));
+                is.setThen(es);
+                depBlock.addStmt(is);
+            }
+        }
+        // end of for-MethodDecl.generateClosureMember
+    }
+
+
+}

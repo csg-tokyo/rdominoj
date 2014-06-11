@@ -1,0 +1,61 @@
+/*
+ * Collect the information about read fields and written fields in the preprocess.
+ */
+
+aspect ReactModifyVar {
+
+    /*
+     * every VarAccess has to
+     * add itself to the field set for the method if it is a read field,
+     * or add the method to the writer set for the field if it is a written field.
+     */
+    public void VarAccess.crossprocess() {
+
+        if(!decl().hostType().compilationUnit().fromSource())    return;
+        if(!(decl() instanceof FieldDeclaration))    return;
+        FieldDeclaration decl = (FieldDeclaration)decl();
+        if(decl.generated)    return;
+
+        // get host method
+        ASTNode p = getParent();
+        while(!(p instanceof MethodDecl)) {
+            p = p.getParent();
+            if(p instanceof ClassDecl)    return;
+        }
+        MethodDecl md = (MethodDecl)p;
+
+        // check if it written
+        boolean isRead = true;
+        p = getParent();
+        while(!(p.getParent() instanceof Stmt)) {
+            p = p.getParent();
+        }
+        if(p instanceof AssignExpr) {
+            Expr e = ((AssignExpr)p).getDest();
+            boolean isThis = true;
+            if(e instanceof Dot) {
+                e = ((Dot)e).extractLast();
+                if(!(((Dot)e.getParent()).getLeft() instanceof ThisAccess)) {
+                    isThis = false;
+                }
+            }
+            if(e == this) {
+                isRead = false;
+                if(isThis) {
+                    // only write accesses to fields on "this" object are tracked.
+                    decl.addWriteMethod(md);
+                } else {
+                    //System.out.println("ignore write access: " + name() + " in method " + md.name());
+                }
+            }
+        }
+        if(isRead) {    // is read
+            if(getParent() instanceof Dot && !(((Dot)getParent()).getLeft() instanceof ThisAccess)) {
+                // only read accesses to fields on "this" object are tracked.
+                //System.out.println("ignore read access: " + name() + " in method " + md.name());
+                return;
+            }
+            md.addReadField(decl);
+        }
+    }
+}

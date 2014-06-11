@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<project name="examples_reactive" default="all">
+
+    <property name="RDominoJ" value=".."/>
+    <property name="DominoJ"  value=".."/>
+    <property name="dominoj"  value=".."/>
+
+    <target name="all" depends="meter_dominoj,meter_rdominoj,redundant_dominoj,redundant_rdominoj,timer_rdominoj,sheet_wrapper,sheet_dominoj,sheet_rdominoj"/>
+
+    <target name="meter_dominoj">
+        <java classpath="${DominoJ}" classname="JavaCompiler" fork="true">
+            <arg line="meter_dominoj/Shape.java"/>
+        </java>
+        <java classpath="${DominoJ}" classname="JavaCompiler" fork="true">
+            <arg line="meter_dominoj/Meter.java"/>
+        </java>
+    </target>
+
+    <target name="meter_rdominoj">
+        <java classpath="${RDominoJ}" classname="JavaCompiler" fork="true">
+            <arg line="meter_rdominoj/Shape.java"/>
+        </java>
+        <java classpath="${RDominoJ}" classname="JavaCompiler" fork="true">
+            <arg line="meter_rdominoj/Meter.java"/>
+        </java>
+    </target>
+
+    <target name="redundant_dominoj">
+        <java classpath="${DominoJ}" classname="JavaCompiler" fork="true">
+            <arg line="redundant_dominoj/Shape.java"/>
+        </java>
+    </target>
+
+    <target name="redundant_rdominoj">
+        <java classpath="${RDominoJ}" classname="JavaCompiler" fork="true">
+            <arg line="redundant_rdominoj/Shape.java"/>
+        </java>
+    </target>
+
+    <target name="timer_rdominoj">
+        <java classpath="${RDominoJ}" classname="JavaCompiler" fork="true">
+            <arg line="timer_rdominoj/Print.java"/>
+        </java>
+    </target>
+
+    <target name="sheet_wrapper">
+        <java classpath="${RDominoJ}" classname="JavaCompiler" fork="true">
+            <arg line="sheet_wrapper/IntCell.java sheet_wrapper/Sheet.java"/>
+        </java>
+    </target>
+
+    <target name="sheet_dominoj">
+        <java classpath="${DominoJ}" classname="JavaCompiler" fork="true">
+            <arg line="sheet_dominoj/PlusSheet.java"/>
+        </java>
+    </target>
+
+    <target name="sheet_rdominoj">
+        <java classpath="${RDominoJ}" classname="JavaCompiler" fork="true">
+            <arg line="sheet_rdominoj/PlusSheet.java"/>
+        </java>
+    </target>
+
+
+    <target name="run">
+        <echo message="-------- meter_dominoj --------"/>
+        <java classpath="${dominoj}:." classname="meter_dominoj.Meter" fork="true"/>
+        <echo message="-------- meter_rdominoj --------"/>
+        <java classpath="${dominoj}:." classname="meter_rdominoj.Meter" fork="true"/>
+        <echo message="-------- redundant_dominoj --------"/>
+        <java classpath="${dominoj}:." classname="redundant_dominoj.Shape" fork="true"/>
+        <echo message="-------- redundant_rdominoj --------"/>
+        <java classpath="${dominoj}:." classname="redundant_rdominoj.Shape" fork="true"/>
+        <echo message="-------- timer_rdominoj --------"/>
+        <java classpath="${dominoj}:." classname="timer_rdominoj.Print" fork="true"/>
+        <echo message="-------- sheet_dominoj --------"/>
+        <java classpath="${dominoj}:." classname="sheet_dominoj.PlusSheet" fork="true"/>
+        <echo message="-------- sheet_rdominoj --------"/>
+        <java classpath="${dominoj}:." classname="sheet_rdominoj.PlusSheet" fork="true"/>
+    </target>
+
+
+    <target name="clean">
+        <delete>
+            <fileset dir="." includes="**/*.class"/>
+        </delete>
+    </target>
+
+</project>

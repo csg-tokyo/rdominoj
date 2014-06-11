@@ -1,0 +1,36 @@
+Buildfile: rdominoj/testcases/build.xml
+
+common:
+     [java] processNoErrors: common/IntCell.java
+
+increase:
+     [java] processNoErrors: increase/Test.java
+
+objs:
+     [java] processNoErrors: objs/Test.java
+
+outer:
+     [java] processNoErrors: outer/IntCell.java
+     [java] processNoErrors: outer/Outer.java
+
+parameter:
+     [java] processNoErrors: parameter/Outer.java
+
+readbysub:
+     [java] processNoErrors: readbysub/Base.java
+     [java] processNoErrors: readbysub/Sub.java
+
+select:
+     [java] processNoErrors: select/IntCell.java
+
+two:
+     [java] processNoErrors: two/Shape.java
+
+writebysub:
+     [java] processNoErrors: writebysub/Sub.java
+     [java] processNoErrors: writebysub/Base.java
+
+all:
+
+BUILD SUCCESSFUL
+Total time: 9 seconds

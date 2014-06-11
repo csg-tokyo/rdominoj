@@ -1,0 +1,33 @@
+Buildfile: rdominoj/examples/build.xml
+
+meter_dominoj:
+     [java] processNoErrors: meter_dominoj/Shape.java
+     [java] processNoErrors: meter_dominoj/Meter.java
+
+meter_rdominoj:
+     [java] processNoErrors: meter_rdominoj/Shape.java
+     [java] processNoErrors: meter_rdominoj/Meter.java
+
+redundant_dominoj:
+     [java] processNoErrors: redundant_dominoj/Shape.java
+
+redundant_rdominoj:
+     [java] processNoErrors: redundant_rdominoj/Shape.java
+
+timer_rdominoj:
+     [java] processNoErrors: timer_rdominoj/Print.java
+
+sheet_wrapper:
+     [java] processNoErrors: sheet_wrapper/IntCell.java
+     [java] processNoErrors: sheet_wrapper/Sheet.java
+
+sheet_dominoj:
+     [java] processNoErrors: sheet_dominoj/PlusSheet.java
+
+sheet_rdominoj:
+     [java] processNoErrors: sheet_rdominoj/PlusSheet.java
+
+all:
+
+BUILD SUCCESSFUL
+Total time: 11 seconds

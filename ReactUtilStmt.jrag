@@ -1,0 +1,85 @@
+/*
+ * Utilities for generating statements.
+ */
+
+aspect ReactUtilStmt {
+
+    /*
+     * transform all non-final variables in the expr into final.
+     */
+    public Expr AssignExpr.transSourceToFinal() {
+        Expr retStr = null;
+        TypeDecl td = hostType();
+        Expr source = getSource();
+        // replace the object with final variables
+        MethodAccess ma = null;
+        if(source instanceof Dot) {
+            Dot dot = (Dot)source;
+            if(dot.extractLast() instanceof MethodAccess) {
+                Dot lastDot = dot.lastDot();
+                Expr ll = lastDot.getLeft();
+                ma = (MethodAccess)dot.extractLast();
+                if(lastDot == source) {
+                    setSource(ll);
+                    flushCache();
+                    source = ll;
+                } else {
+                    ASTNode lp = lastDot.getParent();
+                    lp.replace(lastDot).with(ll);
+                    lp.flushCache();
+                }
+                VarAccess fv = td.createLocalFinalVariable(source, (Stmt)getParent());
+                setSource(new Dot(fv, ma));
+                flushCache();
+                retStr = new Dot(fv.fullCopy(), new MethodAccess("toString", new List()));
+            }
+        } else if(source instanceof MethodAccess) {
+            ma = (MethodAccess)source;
+            retStr = new Dot(new ThisAccess("this"), new MethodAccess("toString", new List()));
+        }
+        
+        if(ma == null || retStr == null) {
+            error("cannot recognize the expression: " + source.toString());
+            return null;
+        }
+
+        // replace the arguments with final variables
+        for(int i=0; i<ma.getNumArg(); i++) {
+            // TODO: create final variable only when necessary
+            VarAccess fv = td.createLocalFinalVariable(ma.getArg(i), (Stmt)getParent());
+            ma.setArg(fv, i);
+            retStr = new AddExpr(retStr, fv.fullCopy());
+        }
+        ma.flushCache();
+        //System.out.println("retStr: " + retStr);
+        return retStr;
+    }
+
+    refine UtilStmt public ArrayList<MemberDecl> MethodDecl.generateClosureMember(String id, TypeDecl rtype, List<Access> exceptions) {
+
+        ArrayList<MemberDecl> members = refined(id, rtype, exceptions);
+        if(depBlock.getNumStmt() <= 0 || !id.endsWith("$impl"))    return members;
+
+        //System.out.println("generateClosureMember: overrides writers() method for " + id);
+
+        TypeDecl td = hostType();
+        Modifiers mods = new Modifiers();
+        mods.addModifier(new Modifier("public"));
+        TypeDecl stype = td.lookupType("java.util", "HashSet");
+        MethodDecl writers = new MethodDecl(mods, stype.createQualifiedAccess(), "writers", new List(), new List(), new Opt());
+        writers.generated = true;
+        Block mb = new Block();
+        String svar = "set";
+        ClassInstanceExpr sinit = new ClassInstanceExpr(stype.createQualifiedAccess(), new List());
+        VariableDeclaration s = new VariableDeclaration(stype.createQualifiedAccess(), svar, sinit);
+        mb.addStmt(s);
+
+        mb.addStmt(depBlock);
+
+        mb.addStmt(new ReturnStmt(new VarAccess(svar)));
+        writers.setBlock(mb);
+
+        members.add(writers);
+        return members;
+    }
+}

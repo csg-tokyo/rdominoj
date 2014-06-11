@@ -1,0 +1,22 @@
+<html>
+<head>
+<title>Print</title>
+
+<script type="text/javascript" src="../flapjax.js"></script>
+</head>
+
+<body onload="loader()">
+<input id="timer" value="0" />
+</body>
+
+<script type="text/javascript">
+function printCurrentTime(time) {
+    insertValueB(time, "timer", "value");
+}
+function loader() {
+    printCurrentTime(timerB(100));
+}
+</script>
+
+</html>
+

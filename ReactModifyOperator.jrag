@@ -1,0 +1,229 @@
+/*
+ * The braces operator for method slots is transformed to braces method calls at an early stage.
+ */
+
+aspect ReactModifyOperator {
+
+    /*
+     * the braces operator is directly transformed to method calls,
+     * so the preprocess for other operators can be ignored.
+     */
+    public void AssignExpr.preprocess() {
+        if(hasBraces() && (getDest() instanceof VarAccess) && ((VarAccess)getDest()).name().equals("_")) {
+            // replace the symbol _ in the braces operator with the method slot at the right-hand side
+            Expr expr = (Expr)getSource().fullCopy();
+            if(!(expr instanceof Dot) && expr instanceof Access) {
+                // allow to omit this
+                expr = new Dot(new ThisAccess("this"), (Access)expr);
+            }
+            Dot dot = ((Dot)expr).lastDot();
+            if(dot.getRight() instanceof MethodAccess) {
+                // replace method slot call with method slot
+                MethodAccess last = (MethodAccess)dot.getRight();
+                VarAccess va = new VarAccess(last.name());
+                dot.setRight(va);
+            }
+            setDest(expr);
+        }
+    }
+    refine ModifyOperator public void AssignSimpleExpr.preprocess() {
+        super.preprocess();
+        if(hasBraces()) {
+            if(getSource().type().isUnknown() || getDest().type().isUnknown()) {
+                super.transToBracesMethodCall("$assign");
+                return;
+            }
+        }
+        refined();
+    }
+    refine ModifyOperator public void AssignXorExpr.preprocess() {
+        super.preprocess();
+        if(hasBraces()) {
+            if(getSource().type().isUnknown() || getDest().type().isUnknown()) {
+                super.transToBracesMethodCall("$before");
+                return;
+            }
+        }
+        refined();
+    }
+    refine ModifyOperator public void AssignPlusExpr.preprocess() {
+        super.preprocess();
+        if(hasBraces()) {
+            if(getSource().type().isUnknown() || getDest().type().isUnknown()) {
+                super.transToBracesMethodCall("$after");
+                return;
+            }
+        }
+        refined();
+    }
+    refine ModifyOperator public void AssignMinusExpr.preprocess() {
+        super.preprocess();
+        if(hasBraces()) {
+            if(getSource().type().isUnknown() || getDest().type().isUnknown()) {
+                super.transToBracesMethodCall("$remove");
+                return;
+            }
+        }
+        refined();
+    }
+
+    /*
+     * transform the AssignExpr into the call to the $braces method.
+     */
+    public void AssignExpr.transToBracesMethodCall(String postfix) {
+        // get right side
+        Expr so = null;
+        String sm = null;
+        MethodAccess rr = null;
+        if(getSource() instanceof Dot) {
+            Dot source = (Dot)getSource();
+            Access last = source.extractLast();
+            if(last instanceof MethodAccess) {
+                rr = (MethodAccess)last;
+                so = source.lastDot().getLeft();
+                sm = rr.name();
+            }
+        } else {
+            error("cannot recognize source of " + this);
+            return;
+        }
+
+        if(so == null || sm == null)    return;
+
+        // get left side
+        Dot dest = null;
+        Expr ll = null;
+        VarAccess lr = null;
+        if(getDest() instanceof Dot) {
+            dest = (Dot)getDest();
+            ll = dest.lastDot().getLeft();
+            Access last = dest.extractLast();
+            if(last instanceof VarAccess)    lr = (VarAccess)last;
+            else if(last instanceof ParseName) {
+                lr = new VarAccess(((ParseName)last).name());
+                dest.replace(last).with(lr);
+                dest.flushCache();
+            }
+        } else {
+            error("cannot recognize dest of " + this);
+            return;
+        }
+        boolean constructor = lr.name().equals("constructor");
+        // check method parameters
+        ClassDecl rh = so.type() instanceof ClassDecl ? (ClassDecl)so.type() : null;
+        if(rh == null) {
+            error("type of " + so + " is not a class");
+            return;
+        }
+        ClassDecl lh = ll.type() instanceof ClassDecl ? (ClassDecl)ll.type() : null;
+        if(lh == null) {
+            error("type of " + ll + " is not a class");
+            return;
+        }
+
+        TypeDecl td = hostType();
+
+        ASTNode parent = getParent();    // ExprStmt
+        ASTNode grand = parent.getParent();
+        MethodDecl rmd = rr.singleCandidateDecl();
+        String cid = rmd.methodId() + "$lc" + rmd.getClosureId();
+        Expr retStr = transSourceToFinal();
+        VariableDeclaration closure = getSource().generateClosureSimple(td, cid, retStr, false);
+        int index = grand.getIndexOfChild(parent) + 1;
+        grand.replace(parent).with(closure);
+        // find out all methods
+        ArrayList<MethodDecl> lms = lh.getMemberMethods(lr.name());
+        //System.out.println("found " + lms.size() + " methods for the left-hand side.");
+        for(int i=0; i<lms.size();i++) {
+            MethodDecl lmd = lms.get(i);
+            if(!lmd.done())    lmd.modifyParms();
+            if(!lmd.isDummy())    continue;
+
+            // Iterator iter = dest${mid}$braces().iterator();
+            String mid = lmd.methodId();
+            String iter = mid + "$iter" + getIterVarId();
+            MethodAccess ma = new MethodAccess(mid+"$braces", new List());
+            dest.replaceLast(ma);
+            grand.insertChild(MethodDecl.generateIteratorStmt(iter, dest, td), index++);
+            // while(iter.hasNext()) {
+            //   ArrayList slot = (ArrayList)iter.next();
+            //   if(slot == PlusSheet$lf0.PlusSheet$update$java_lang_Object$java_lang_Object$java_lang_Object$dominoj_Closure$dominoj_Closure$getSlot())    continue;
+            //   slot.add(${cid});
+            // }
+            Block wb = new Block();
+            String svar = "slot";
+            wb.addStmt(MethodDecl.generateVarDeclAssignMethodStmt(svar, "java.util", "ArrayList", iter, "next", new String[]{}, true, td));
+
+            // check if slot==XXX$getSlot()
+            IfStmt is = new IfStmt();
+            MethodAccess getSlot = new MethodAccess(rmd.methodId(false, true)+"$getSlot", new List());
+            Expr self = getSlot;
+            if(getSource() instanceof Dot) {
+                Dot dot = (Dot)getSource().fullCopy();
+                dot.replaceLast(getSlot);
+                self = dot;
+            }
+            EQExpr check = new EQExpr(new VarAccess(svar), self);
+            is.setCondition(check);
+            Block ib = new Block();
+            ib.addStmt(new ContinueStmt());
+            is.setThen(ib);
+            wb.addStmt(is);
+
+            if(postfix == "$remove") {
+                // => int ${idx} = 0;
+                String idx = "idx";
+                VariableDeclaration idxdecl = new VariableDeclaration(new PrimitiveTypeAccess("int"), idx, new IntegerLiteral(0));
+                wb.addStmt(idxdecl);
+                // => ${svar}.size() > ${idx}
+                GTExpr gtsize = new GTExpr(new Dot(new VarAccess(svar), new MethodAccess("size", new List())),
+                                          new VarAccess(idx));
+                Block rwb = new Block();
+                // => Object ${var} = (Object) ${svar}.get(${idx});
+                String var = "var";
+                rwb.addStmt(MethodDecl.generateVarDeclAssignMethodStmt(var, "java.lang", "Object", svar, "get", new String[]{idx}, true, td));
+                // => if(${var} == ${cid} || ${var}.toString().equals(${cid}.toString()))
+                EQExpr refeq = new EQExpr(new VarAccess(var), new VarAccess(cid));
+                MethodAccess eqs = new MethodAccess("equals", new List());
+                eqs.addArg(new Dot(new VarAccess(cid),
+                                   new MethodAccess("toString", new List())));
+                Dot streq = new Dot(new VarAccess(var),
+                                    new Dot(new MethodAccess("toString", new List()),
+                                            eqs));
+                OrLogicalExpr found = new OrLogicalExpr(refeq, streq);
+                Block tb = new Block();
+                // => ${svar}.remove(${idx});
+                MethodAccess ro = new MethodAccess("remove", new List());
+                ro.addArg(new VarAccess(idx));
+                tb.addStmt(new ExprStmt(new Dot(new VarAccess(svar), ro)));
+                Block eb = new Block();
+                // => ${idx} += 1;
+                eb.addStmt(new ExprStmt(new AssignPlusExpr(new VarAccess(idx), new IntegerLiteral(1))));
+                IfStmt ris = new IfStmt();
+                ris.setCondition(found);
+                ris.setThen(tb);
+                ris.setElse(eb);
+                rwb.addStmt(ris);
+                wb.addStmt(new WhileStmt(gtsize, rwb));
+            } else {
+                if(postfix == "$assign") {
+                    wb.addStmt(new ExprStmt(new Dot(new VarAccess(svar), new MethodAccess("clear", new List()))));
+                }
+                MethodAccess op = new MethodAccess("add", new List());
+                if(postfix == "$before")    op.addArg(new IntegerLiteral(0));
+                op.addArg(new VarAccess(cid));
+                wb.addStmt(new ExprStmt(new Dot(new VarAccess(svar), op)));
+            }
+            WhileStmt ws = new WhileStmt(new Dot(new VarAccess(iter), new MethodAccess("hasNext", new List())), wb);
+            grand.insertChild(ws, index++);
+        }
+        grand.getParent().flushCaches();
+        //System.out.println(grand.getParent());
+        //System.out.println(lh.compilationUnit());
+    }
+    private static int AssignExpr.iterVarIdIndex = 0;
+    public static int AssignExpr.getIterVarId() {
+        return iterVarIdIndex++;
+    }
+
+}

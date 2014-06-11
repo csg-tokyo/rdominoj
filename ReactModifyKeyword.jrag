@@ -1,0 +1,21 @@
+/*
+ * 
+ */
+
+aspect ReactModifyKeyword {
+
+    refine ModifyKeyword public void MethodAccess.nameCheck() {
+        if(decls().isEmpty() && (!isQualified() || !qualifier().isUnknown())) {
+            if(name().endsWith("$getSlot") && hostType().isAnonymous()) {
+                TypeDecl td = hostType().enclosingBodyDecl().hostType();
+                TypeDecl atype = td.lookupType("java.util", "ArrayList");
+                Block b = new Block();
+                b.addStmt(new ReturnStmt(new ClassInstanceExpr(atype.createQualifiedAccess(), new List())));
+                td.createMemberMethod(name(), atype.createQualifiedAccess(), new List(), b, false);
+                bottomupFlushCache();
+            }
+        }
+
+        refined();
+    }
+}
