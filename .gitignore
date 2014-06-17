@@ -14,3 +14,7 @@ rdominoj-extension-src.jar
 
 # copy from dominoj repository
 dominoj/
+
+# temporary files
+.*.swp
+*~
