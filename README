@@ -1,8 +1,15 @@
 The ReactiveDominoJ compiler
 --------------------
-ReactiveDominoJ is an extension to DominoJ for supporting the automation in handler bindings.
-For the publications and source code, please visit our project webpage:
+Copyright (c) 2013-, YungYu Zhuang. All rights reserved.
+
+ReactiveDominoJ is a practical implementation of an expand event system
+supporting reactive programming.  This project is an extension to the DominoJ compiler.
+For the publications and binary distribution please visit our project webpage:
   http://www.csg.ci.i.u-tokyo.ac.jp/projects/rdominoj/
+
+The source code of this project is licensed under the modified BSD License
+(please see the LICENSE file for the full text).
+
 
 build steps:
   1. checkout ReactiveDominoJ from GitHub.

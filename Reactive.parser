@@ -1,3 +1,14 @@
+/*
+ * ReactiveDominoJ is a practical implementation of an expand event system
+ * supporting reactive programming.  This project is an implementation of its
+ * compiler built on top of DominoJ and JastAddJ.
+ * 
+ * Copyright (c) 2013-, YungYu Zhuang. All rights reserved.
+ *
+ * The contents of this file are licensed under the modified BSD License
+ * (please see the LICENSE file for the full text).
+ */
+
 Expr assignment =
     LBRACE postfix_expression.dest RBRACE EQ assignment_expression.source {: return new AssignSimpleExpr(dest, source, true); :}
   | LBRACE postfix_expression.dest RBRACE PLUSEQ assignment_expression.source {: return new AssignPlusExpr(dest, source, true); :}

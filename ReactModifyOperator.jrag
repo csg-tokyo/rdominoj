@@ -1,4 +1,15 @@
 /*
+ * ReactiveDominoJ is a practical implementation of an expand event system
+ * supporting reactive programming.  This project is an implementation of its
+ * compiler built on top of DominoJ and JastAddJ.
+ * 
+ * Copyright (c) 2013-, YungYu Zhuang. All rights reserved.
+ *
+ * The contents of this file are licensed under the modified BSD License
+ * (please see the LICENSE file for the full text).
+ */
+
+/*
  * The braces operator for method slots is transformed to braces method calls at an early stage.
  */
 
