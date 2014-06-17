@@ -36,9 +36,9 @@ The source code of this project is licensed under the modified BSD License
 
 ### create jar files
 
-* `ant jar` for building DominoJCompiler.jar and dominoj.jar.
+* `ant jar` for building `DominoJCompiler.jar` and `dominoj.jar`.
 
-* `ant source` for building dominoj-compiler-src.jar.
+* `ant source` for building `dominoj-compiler-src.jar`.
 
 ### examples
 
