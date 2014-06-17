@@ -176,12 +176,12 @@
 
 <!-- build binaries -->
 <target name="jar" depends="build">
-    <jar destfile="ReactiveDominoJCompiler.jar" basedir="." includes="**/*.class" excludes="anttask/**,examples/**,testcases/**,utils/**">
+    <jar destfile="ReactiveDominoJCompiler.jar" basedir="." includes="**/*.class,LICENSE,README.md" excludes="anttask/**,examples/**,testcases/**,utils/**">
     <manifest>
       <attribute name="Main-Class" value="JavaCompiler"/>
     </manifest>
   </jar>
-  <jar destfile="dominoj.jar" basedir="${DominoJ}" includes="dominoj/*.class"/>
+  <jar destfile="dominoj.jar" basedir="${DominoJ}" includes="dominoj/*.class,LICENSE,README.md"/>
 </target>
 
 <!-- build a source distribution -->
@@ -190,12 +190,14 @@
       <!-- ReactiveDominoJ language extension -->
                 <fileset dir=".">
         <!-- include source file -->
-                    <include name="${ReactiveDominoJ}/*.jrag"/>
-                    <include name="${ReactiveDominoJ}/Reactive.parser"/>
+                    <include name="*.jrag"/>
+                    <include name="Reactive.parser"/>
         <!-- include buildfile -->
-                    <include name="${ReactiveDominoJ}/*.xml"/>
+                    <include name="*.xml"/>
+        <!-- include license -->
+                    <include name="LICENSE"/>
         <!-- include readme -->
-                    <include name="${ReactiveDominoJ}/README.md"/>
+                    <include name="README.md"/>
                 </fileset>
       <manifest>
       </manifest>
