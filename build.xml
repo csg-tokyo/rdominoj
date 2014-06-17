@@ -195,7 +195,7 @@
         <!-- include buildfile -->
                     <include name="${ReactiveDominoJ}/*.xml"/>
         <!-- include readme -->
-                    <include name="${ReactiveDominoJ}/README"/>
+                    <include name="${ReactiveDominoJ}/README.md"/>
                 </fileset>
       <manifest>
       </manifest>
