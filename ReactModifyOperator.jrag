@@ -137,11 +137,22 @@ aspect ReactModifyOperator {
         ASTNode parent = getParent();    // ExprStmt
         ASTNode grand = parent.getParent();
         MethodDecl rmd = rr.singleCandidateDecl();
-        String cid = rmd.methodId() + "$lc" + rmd.getClosureId();
-        Expr retStr = transSourceToFinal();
-        VariableDeclaration closure = getSource().generateClosureSimple(td, cid, retStr, false);
-        int index = grand.getIndexOfChild(parent) + 1;
-        grand.replace(parent).with(closure);
+        boolean hasArg = rr.getNumArg() > 0;
+        String cid;
+        int index;
+        if(hasArg) {
+            // create a local variable
+            cid = rmd.methodId() + "$lc" + rmd.getClosureId();
+            Expr retStr = transSourceToFinal();
+            VariableDeclaration closure = getSource().generateClosureSimple(td, cid, retStr, false);
+            index = grand.getIndexOfChild(parent) + 1;
+            grand.replace(parent).with(closure);
+        } else {
+            // simply use the field
+            cid = rmd.methodId(false, true) + "$c";
+            index = grand.getIndexOfChild(parent);
+            grand.removeChild(parent);
+        }
         // find out all methods
         ArrayList<MethodDecl> lms = lh.getMemberMethods(lr.name());
         //System.out.println("found " + lms.size() + " methods for the left-hand side.");
@@ -182,47 +193,60 @@ aspect ReactModifyOperator {
             wb.addStmt(is);
 
             if(postfix == "$remove") {
-                // => int ${idx} = 0;
-                String idx = "idx";
-                VariableDeclaration idxdecl = new VariableDeclaration(new PrimitiveTypeAccess("int"), idx, new IntegerLiteral(0));
-                wb.addStmt(idxdecl);
-                // => ${svar}.size() > ${idx}
-                GTExpr gtsize = new GTExpr(new Dot(new VarAccess(svar), new MethodAccess("size", new List())),
-                                          new VarAccess(idx));
-                Block rwb = new Block();
-                // => Object ${var} = (Object) ${svar}.get(${idx});
-                String var = "var";
-                rwb.addStmt(MethodDecl.generateVarDeclAssignMethodStmt(var, "java.lang", "Object", svar, "get", new String[]{idx}, true, td));
-                // => if(${var} == ${cid} || ${var}.toString().equals(${cid}.toString()))
-                EQExpr refeq = new EQExpr(new VarAccess(var), new VarAccess(cid));
-                MethodAccess eqs = new MethodAccess("equals", new List());
-                eqs.addArg(new Dot(new VarAccess(cid),
-                                   new MethodAccess("toString", new List())));
-                Dot streq = new Dot(new VarAccess(var),
-                                    new Dot(new MethodAccess("toString", new List()),
-                                            eqs));
-                OrLogicalExpr found = new OrLogicalExpr(refeq, streq);
-                Block tb = new Block();
-                // => ${svar}.remove(${idx});
-                MethodAccess ro = new MethodAccess("remove", new List());
-                ro.addArg(new VarAccess(idx));
-                tb.addStmt(new ExprStmt(new Dot(new VarAccess(svar), ro)));
-                Block eb = new Block();
-                // => ${idx} += 1;
-                eb.addStmt(new ExprStmt(new AssignPlusExpr(new VarAccess(idx), new IntegerLiteral(1))));
-                IfStmt ris = new IfStmt();
-                ris.setCondition(found);
-                ris.setThen(tb);
-                ris.setElse(eb);
-                rwb.addStmt(ris);
-                wb.addStmt(new WhileStmt(gtsize, rwb));
+                if(hasArg) {
+                    // => int ${idx} = 0;
+                    String idx = "idx";
+                    VariableDeclaration idxdecl = new VariableDeclaration(new PrimitiveTypeAccess("int"), idx, new IntegerLiteral(0));
+                    wb.addStmt(idxdecl);
+                    // => ${svar}.size() > ${idx}
+                    GTExpr gtsize = new GTExpr(new Dot(new VarAccess(svar), new MethodAccess("size", new List())),
+                                              new VarAccess(idx));
+                    Block rwb = new Block();
+                    // => Object ${var} = (Object) ${svar}.get(${idx});
+                    String var = "var";
+                    rwb.addStmt(MethodDecl.generateVarDeclAssignMethodStmt(var, "java.lang", "Object", svar, "get", new String[]{idx}, true, td));
+                    // => if(${var} == ${cid} || ${var}.toString().equals(${cid}.toString()))
+                    EQExpr refeq = new EQExpr(new VarAccess(var), new VarAccess(cid));
+                    MethodAccess eqs = new MethodAccess("equals", new List());
+                    eqs.addArg(new Dot(new VarAccess(cid),
+                                       new MethodAccess("toString", new List())));
+                    Dot streq = new Dot(new VarAccess(var),
+                                        new Dot(new MethodAccess("toString", new List()),
+                                                eqs));
+                    OrLogicalExpr found = new OrLogicalExpr(refeq, streq);
+                    Block tb = new Block();
+                    // => ${svar}.remove(${idx});
+                    MethodAccess ro = new MethodAccess("remove", new List());
+                    ro.addArg(new VarAccess(idx));
+                    tb.addStmt(new ExprStmt(new Dot(new VarAccess(svar), ro)));
+                    Block eb = new Block();
+                    // => ${idx} += 1;
+                    eb.addStmt(new ExprStmt(new AssignPlusExpr(new VarAccess(idx), new IntegerLiteral(1))));
+                    IfStmt ris = new IfStmt();
+                    ris.setCondition(found);
+                    ris.setThen(tb);
+                    ris.setElse(eb);
+                    rwb.addStmt(ris);
+                    wb.addStmt(new WhileStmt(gtsize, rwb));
+                } else {
+                    // => ${svar}.remove(${so}.${cid});
+                    MethodAccess ro = new MethodAccess("remove", new List());
+                    ro.addArg(new Dot((Expr)so.fullCopy(), new VarAccess(cid)));
+                    wb.addStmt(new ExprStmt(new Dot(new VarAccess(svar), ro)));
+                }
             } else {
                 if(postfix == "$assign") {
                     wb.addStmt(new ExprStmt(new Dot(new VarAccess(svar), new MethodAccess("clear", new List()))));
                 }
                 MethodAccess op = new MethodAccess("add", new List());
                 if(postfix == "$before")    op.addArg(new IntegerLiteral(0));
-                op.addArg(new VarAccess(cid));
+                if(hasArg) {
+                    // => ${svar}.${postfix}(${cid});
+                    op.addArg(new VarAccess(cid));
+                } else {
+                    // => ${svar}.${postfix}(${so}.${cid});
+                    op.addArg(new Dot((Expr)so.fullCopy(), new VarAccess(cid)));
+                }
                 wb.addStmt(new ExprStmt(new Dot(new VarAccess(svar), op)));
             }
             WhileStmt ws = new WhileStmt(new Dot(new VarAccess(iter), new MethodAccess("hasNext", new List())), wb);
