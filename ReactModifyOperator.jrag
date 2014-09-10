@@ -140,13 +140,31 @@ aspect ReactModifyOperator {
         boolean hasArg = rr.getNumArg() > 0;
         String cid;
         int index;
+        boolean isLocal = false;
         if(hasArg) {
-            // create a local variable
-            cid = rmd.methodId() + "$lc" + rmd.getClosureId();
-            Expr retStr = transSourceToFinal();
-            VariableDeclaration closure = getSource().generateClosureSimple(td, cid, retStr, false);
-            index = grand.getIndexOfChild(parent) + 1;
-            grand.replace(parent).with(closure);
+            if(rr.hasNonLiteral()) {
+                // create a local variable
+                cid = rmd.methodId() + "$lc" + rmd.getClosureId();
+                Expr retStr = transSourceToFinal();
+                VariableDeclaration closure = getSource().generateClosureSimple(td, cid, retStr, false);
+                index = grand.getIndexOfChild(parent) + 1;
+                grand.replace(parent).with(closure);
+                isLocal = true;
+            } else {
+                // create a field
+                cid = rmd.methodId() + "$fc" + rmd.getClosureId();
+                Access right = rmd.isStatic() ? rr : new Dot(new ThisAccess("this"), rr);
+                Expr expr = new Dot(rh.createQualifiedAccess(), right);
+                Modifiers mods = new Modifiers();
+                if(rmd.isPublic())            mods.addModifier(new Modifier("public"));
+                else if(rmd.isProtected())    mods.addModifier(new Modifier("protected"));
+                else                          mods.addModifier(new Modifier("private"));
+                if(rmd.isStatic())            mods.addModifier(new Modifier("static"));
+                VariableDeclaration closure = expr.generateClosureSimple(td, cid, null, false);
+                rh.createMemberField(cid, "dominoj", "ClosureNoException", mods, (Expr)closure.getInit().fullCopy());
+                index = grand.getIndexOfChild(parent);
+                grand.removeChild(parent);
+            }
         } else {
             // simply use the field
             cid = rmd.methodId(false, true) + "$c";
@@ -193,7 +211,7 @@ aspect ReactModifyOperator {
             wb.addStmt(is);
 
             if(postfix == "$remove") {
-                if(hasArg) {
+                if(isLocal) {
                     // => int ${idx} = 0;
                     String idx = "idx";
                     VariableDeclaration idxdecl = new VariableDeclaration(new PrimitiveTypeAccess("int"), idx, new IntegerLiteral(0));
@@ -229,10 +247,10 @@ aspect ReactModifyOperator {
                     rwb.addStmt(ris);
                     wb.addStmt(new WhileStmt(gtsize, rwb));
                 } else {
-                    // => ${svar}.remove(${so}.${cid});
+                    // => while(${svar}.remove(${so}.${cid}));
                     MethodAccess ro = new MethodAccess("remove", new List());
                     ro.addArg(new Dot((Expr)so.fullCopy(), new VarAccess(cid)));
-                    wb.addStmt(new ExprStmt(new Dot(new VarAccess(svar), ro)));
+                    wb.addStmt(new WhileStmt(new Dot(new VarAccess(svar), ro), new Block()));
                 }
             } else {
                 if(postfix == "$assign") {
@@ -240,7 +258,7 @@ aspect ReactModifyOperator {
                 }
                 MethodAccess op = new MethodAccess("add", new List());
                 if(postfix == "$before")    op.addArg(new IntegerLiteral(0));
-                if(hasArg) {
+                if(isLocal) {
                     // => ${svar}.${postfix}(${cid});
                     op.addArg(new VarAccess(cid));
                 } else {
