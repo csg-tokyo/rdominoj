@@ -56,8 +56,10 @@ aspect ReactUtilStmt {
 
         // replace the arguments with final variables
         for(int i=0; i<ma.getNumArg(); i++) {
-            // TODO: create final variable only when necessary
-            VarAccess fv = td.createLocalFinalVariable(ma.getArg(i), (Stmt)getParent());
+            Expr arg = ma.getArg(i);
+            if(arg instanceof Literal)
+                continue;
+            VarAccess fv = td.createLocalFinalVariable(arg, (Stmt)getParent());
             ma.setArg(fv, i);
             retStr = new AddExpr(retStr, fv.fullCopy());
         }

@@ -104,6 +104,15 @@ aspect ReactUtilGeneral {
         refined();
     }
 
+    public boolean MethodAccess.hasNonLiteral() {
+        for(int i=0; i<getNumArg(); i++) {
+            if(!(getArg(i) instanceof Literal))
+                return true;
+        }
+        return false;
+    }
+
+
     /* workaround for
      * java.lang.ClassCastException: AST.Opt cannot be cast to AST.List
      *   at AST.AnonymousDecl.getImplementsListNoTransform(AnonymousDecl.java:529)
